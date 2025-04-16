@@ -15,6 +15,20 @@ int main()
 
 }
 
+bool validarEnmascaramiento(unsigned char* imagen, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels)
+/* Esta función verifica si al validar el enmascaramiento aplicado sobre el arreglo de la imagen candidata coincide con el .txt
+ */
+{
+    for (int i = 0; i < n_pixels * 3; ++i)
+    {
+        int pos = seed * 3 + i;
+        if((int)imagen[pos] + (int)mascara[i] != (int)resultado[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
 
 unsigned char* loadPixels(QString input, int &width, int &height){
 /*

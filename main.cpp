@@ -8,21 +8,32 @@ using namespace std;
 unsigned char* loadPixels(QString input, int &width, int &height);
 bool exportImage(unsigned char* pixelData, int width,int height, QString archivoSalida);
 unsigned int* loadSeedMasking(const char* nombreArchivo, int &seed, int &n_pixels);
-bool validarEnmascaramiento(unsigned char* imagen, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels);
+bool validarEnmascaramiento(unsigned char* imagen, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes);
 
 int main()
 {
 
 }
 
-bool validarEnmascaramiento(unsigned char* imagen, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels)
+bool validarEnmascaramiento(unsigned char* imagen, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes)
 /* Esta función verifica si al validar el enmascaramiento aplicado sobre el arreglo de la imagen candidata coincide con el .txt
  */
 {
-    for (int i = 0; i < n_pixels * 3; ++i)
+    if (seed < 0)
     {
-        int pos = seed * 3 + i;
-        if((int)imagen[pos] + (int)mascara[i] != (int)resultado[i])
+        return false;
+    }
+
+    int inicio = seed * 3;
+    int requerido = n_pixels * 3;
+
+    if (inicio + requerido > total_bytes)
+    {
+        return false;
+    }
+    for (int i = 0; i < requerido; ++i)
+    {
+        if ((int)imagen[inicio + i] + (int)mascara[i] != (int)resultado[i])
         {
             return false;
         }

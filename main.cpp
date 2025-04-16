@@ -19,21 +19,24 @@ bool validarEnmascaramiento(unsigned char* imagen, unsigned char* mascara, unsig
 /* Esta función verifica si al validar el enmascaramiento aplicado sobre el arreglo de la imagen candidata coincide con el .txt
  */
 {
-    if (seed < 0)
+    int total_pixels = total_bytes / 3;
+
+    if (seed < 0 || seed >= total_pixels)
     {
+        cout << "Error: seed fuera de limite permitido"<< endl;
         return false;
     }
 
-    int inicio = seed * 3;
-    int requerido = n_pixels * 3;
-
-    if (inicio + requerido > total_bytes)
+    if (seed + n_pixels > total_pixels)
     {
+        cout << "Error: rango de pixeles excede la imagen" << endl;
         return false;
     }
-    for (int i = 0; i < requerido; ++i)
+
+    for (int i = 0; i < n_pixels * 3; ++i)
     {
-        if ((int)imagen[inicio + i] + (int)mascara[i] != (int)resultado[i])
+        int pos = seed * 3 + i;
+        if ((int)imagen[pos] + (int)mascara[i] != (int)resultado[i])
         {
             return false;
         }

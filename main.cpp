@@ -16,7 +16,8 @@ int main()
 }
 
 bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* mascara, const unsigned int* resultado, int seed, int n_pixels, int total_bytes) {
-
+/* Esta función verifica si al validar el enmascaramiento aplicado sobre el arreglo de la imagen candidata coincide con el .txt
+ */
     if (imagen == 0 || mascara == 0 || resultado == 0) return false;
     if (seed < 0 || n_pixels <= 0) return false;
 
@@ -39,6 +40,21 @@ bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* ma
     }
 
     return true;
+}
+
+unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño){
+
+    unsigned char* imagenXOR = new unsigned char[tamaño];
+
+
+    for(int i = 0; i < tamaño; i += 3){
+        imagenXOR[i] = imagen[i] ^ imagenMascara[i];
+        imagenXOR[i + 1] = imagen[i + 1] ^ imagenMascara[i + 1];
+        imagenXOR[i + 2] = imagen[i + 2] ^ imagenMascara[i + 2];
+    }
+
+    return imagenXOR;
+
 }
 
 unsigned char* loadPixels(QString input, int &width, int &height){

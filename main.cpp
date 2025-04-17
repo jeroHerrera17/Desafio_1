@@ -8,39 +8,36 @@ using namespace std;
 unsigned char* loadPixels(QString input, int &width, int &height);
 bool exportImage(unsigned char* pixelData, int width,int height, QString archivoSalida);
 unsigned int* loadSeedMasking(const char* nombreArchivo, int &seed, int &n_pixels);
-bool validarEnmascaramiento(unsigned char* imagen, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes);
+bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* mascara, const unsigned int* resultado, int seed, int n_pixels, int total_bytes);
 
 int main()
 {
 
 }
 
-bool validarEnmascaramiento(unsigned char* imagen, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes)
-/* Esta función verifica si al validar el enmascaramiento aplicado sobre el arreglo de la imagen candidata coincide con el .txt
- */
-{
-    int total_pixels = total_bytes / 3;
+bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* mascara, const unsigned int* resultado, int seed, int n_pixels, int total_bytes) {
 
-    if (seed < 0 || seed >= total_pixels)
-    {
-        cout << "Error: seed fuera de limite permitido"<< endl;
-        return false;
-    }
+    if (imagen == 0 || mascara == 0 || resultado == 0) return false;
+    if (seed < 0 || n_pixels <= 0) return false;
 
-    if (seed + n_pixels > total_pixels)
-    {
-        cout << "Error: rango de pixeles excede la imagen" << endl;
-        return false;
-    }
+    unsigned long inicio = (unsigned long)seed * 3UL;
+    unsigned long requerido = (unsigned long)n_pixels * 3UL;
+    unsigned long total_bytes_ul = (unsigned long)total_bytes;
 
-    for (int i = 0; i < n_pixels * 3; ++i)
-    {
-        int pos = seed * 3 + i;
-        if ((int)imagen[pos] + (int)mascara[i] != (int)resultado[i])
-        {
+    if (inicio >= total_bytes_ul) return false;
+    if (requerido > total_bytes_ul - inicio) return false;
+
+    const unsigned char* pImagen = imagen + inicio;
+    const unsigned char* pMascara = mascara;
+
+    for (unsigned long i = 0; i < requerido; ++i) {
+        unsigned int suma = (unsigned int)pImagen[i] + (unsigned int)pMascara[i];
+
+        if (suma != resultado[i]) {
             return false;
         }
     }
+
     return true;
 }
 

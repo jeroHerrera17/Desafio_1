@@ -9,6 +9,9 @@ unsigned char* loadPixels(QString input, int &width, int &height);
 bool exportImage(unsigned char* pixelData, int width,int height, QString archivoSalida);
 unsigned int* loadSeedMasking(const char* nombreArchivo, int &seed, int &n_pixels);
 bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* mascara, const unsigned int* resultado, int seed, int n_pixels, int total_bytes);
+unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño);
+bool detectarTransformacion_v1(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionEncontrada);
+
 
 int main()
 {
@@ -40,6 +43,40 @@ bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* ma
     }
 
     return true;
+}
+
+bool detectarTransformacion_v1(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionEncontrada) {
+
+    unsigned char* candidata = aplicarXOR(imagenActual, IM, total_bytes);
+    if (validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
+        strcpy(transformacionEncontrada, "XOR");
+        delete[] candidata;
+        return true;
+    }
+    delete[] candidata;
+
+    for (int b = 1; b <= 7; ++b) {
+        candidata = rotarBits(imagenActual, total_bytes, b, 1);
+        if (validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
+            sprintf(transformacionEncontrada, "ROT_R_%d", b);
+            delete[] candidata;
+            return true;
+        }
+        delete[] candidata;
+
+        candidata = rotarBits(imagenActual, total_bytes, b, 0);
+        if (validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
+            sprintf(transformacionEncontrada, "ROT_L_%d", b);
+            delete[] candidata;
+            return true;
+        }
+        delete[] candidata;
+    }
+
+    for (int b = 1; b <= 7; ++b) {
+    }
+
+    return false;
 }
 
 unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño){

@@ -5,13 +5,20 @@
 
 
 using namespace std;
+
+//modulo 1:
 unsigned char* loadPixels(QString input, int &width, int &height);
 bool exportImage(unsigned char* pixelData, int width,int height, QString archivoSalida);
 unsigned int* loadSeedMasking(const char* nombreArchivo, int &seed, int &n_pixels);
 bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* mascara, const unsigned int* resultado, int seed, int n_pixels, int total_bytes);
+
+//modulo 2:
 unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño);
 unsigned char* rotacion(unsigned char elemento, unsigned int NumRotaciones, char direccion);
 unsigned char* rotarBits(unsigned char* imagen, int tamaño, int NumRotaciones, char direccion);
+unsigned char* desplazarBits(unsigned char* imagen, int tamaño, int NumDesplazamientos, char direccion);
+
+//modulo  :
 bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada);
 void convertirEnteroEnTexto(int numero, char* buffer);
 bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada);
@@ -171,10 +178,6 @@ unsigned int* loadSeedMasking(const char* nombreArchivo, int &seed, int &n_pixel
  *      unsigned char* imagen = arreglo dinamico de la imagen inicial.
  *      unsigned char* imagenMascara = arreglo dinamico de la imagen mascara con la que aplicaremos el XOR.
  *      int tamaño = tamaño del arreglo dinamico de la imagen inicial.
- *
- * Salidas:
- *      unsigned char* imagenXOR = arreglo dinamico resultante de la aplicacion de XOR.
- *
   */
 unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño){
 
@@ -201,7 +204,6 @@ unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, i
 *       unsigned char elemento = este es el elemento que deseamos rotar.
 *       unsigned int NumRotaciones = cantidad de bits a rotar.
 *       char direccion = esta tendra uno de los siguientes valores, "i" para izquierda, "d" para derecha
-* Salidas:
 
 */
 unsigned char rotacion(unsigned char elemento, unsigned int NumRotaciones, char direccion){
@@ -227,7 +229,6 @@ unsigned char rotacion(unsigned char elemento, unsigned int NumRotaciones, char 
  *      int tamaño = tamaño del arreglo dinamico inicial.
  *      int NumRotaciones = cantidad de bits a rotar
  *      char direccion = esta tendra uno de los siguientes valores, "i" para izquierda, "d" para derecha
- * Salidas:
  */
 
 unsigned char* rotarBits(unsigned char* imagen, int tamaño, int NumRotaciones, char direccion){
@@ -245,6 +246,38 @@ unsigned char* rotarBits(unsigned char* imagen, int tamaño, int NumRotaciones, 
     }
 
     return imagenRotada;
+}
+
+/* Funcion desplazarBits():
+ * esta funcion desplaza los bits de la imagen una cantidad y en una direccion especifica.
+ * Entradas:
+ *      unsigned char* imagen = arreglo dinamico con los bits de la imagen inicial.
+ *      int tamaño = tamaño del arreglo dinamico inicial.
+ *      int NumDesplazamientos = cantidad de bits a desplazar.
+ *      char direccion = direccion en la cual se desplazaran los bits.
+ */
+
+unsigned char* desplazarBits(unsigned char* imagen, int tamaño, int NumDesplazamientos, char direccion){
+
+    //definimos una variable donde guardaremos la imagen desplazada.
+    //*ADVERTENCIA*, no olvide eliminar el espacio de memoria de imagenDesplazada cuando se deje de utilizar.
+    unsigned char* imagenDesplazada = new unsigned char[tamaño];
+
+    for(int i = 0; i < tamaño; i += 3){
+        if (direccion == ){
+            imagenDesplazada[i] = imagen[i] >> NumDesplazamientos;
+            imagenDesplazada[i + 1] = imagen[i + 1] >> NumDesplazamientos;
+            imagenDesplazada[i + 2] = imagen[i + 2] >> NumDesplazamientos;
+        }
+
+        else{
+            imagenDesplazada[i] = imagen[i] << NumDesplazamientos;
+            imagenDesplazada[i + 1] = imagen[i + 1] << NumDesplazamientos;
+            imagenDesplazada[i + 2] = imagen[i + 2] << NumDesplazamientos;
+        }
+    }
+
+    return imagenDesplazada
 }
 
 

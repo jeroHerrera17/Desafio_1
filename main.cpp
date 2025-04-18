@@ -10,8 +10,8 @@ bool exportImage(unsigned char* pixelData, int width,int height, QString archivo
 unsigned int* loadSeedMasking(const char* nombreArchivo, int &seed, int &n_pixels);
 bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* mascara, const unsigned int* resultado, int seed, int n_pixels, int total_bytes);
 unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño);
-bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionEncontrada);
-bool probarYLiberar(unsigned char* candidata, const char* nombre, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionEncontrada);
+bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada);
+void convertirEnteroEnTexto(int numero, char* buffer);
 
 
 int main()
@@ -46,36 +46,71 @@ bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* ma
     return true;
 }
 
-bool probarYLiberar(unsigned char* candidata, const char* nombre, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionEncontrada) {
+void convertirEnteroEnTexto(int numero, char* buffer) {
+    if (numero < 0 || numero > 99) {
+        buffer[0] = '\0';
+        return;
+    }
 
-    if (validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
-        strcpy(transformacionEncontrada, nombre);
+    if (numero < 10) {
+        buffer[0] = '0' + numero;
+        buffer[1] = '\0';
+    } else {
+        buffer[0] = '0' + (numero / 10);
+        buffer[1] = '0' + (numero % 10);
+        buffer[2] = '\0';
+    }
+}
+
+bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada) {
+
+    unsigned char* candidata = nullptr;
+    char numeroTexto[3];
+
+    candidata = aplicarXOR(imagenActual, IM, total_bytes);
+    if (candidata && validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
+        transformacionUsada[0] = 'X';
+        transformacionUsada[1] = 'O';
+        transformacionUsada[2] = 'R';
+        transformacionUsada[3] = '\0';
         delete[] candidata;
         return true;
     }
-    delete[] candidata;
-    return false;
-}
+    if (candidata) {
+        delete[] candidata;
+        candidata = nullptr;
+    }
 
-bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionEncontrada) {
-
-    char nombre[32];
-    unsigned char* candidata = aplicarXOR(imagenActual, IM, total_bytes);
-    if (probarYLiberar(candidata, "XOR", mascara, resultado, seed, n_pixels, total_bytes, transformacionEncontrada))
-        return true;
+    const char* prefijos[] = {"ROT_R_", "ROT_L_", "SHF_R_", "SHF_L_"};
+    const bool direcciones[] = {true, false, true, false};
 
     for (int b = 1; b <= 7; ++b) {
-        sprintf(nombre, "ROT_R_%d", b);
-        candidata = rotarBits(imagenActual, total_bytes, b, 1);
-        if (probarYLiberar(candidata, nombre, mascara, resultado, seed, n_pixels, total_bytes, transformacionEncontrada))
-            return true;
+        convertirEnteroEnTexto(b, numeroTexto);
 
-        sprintf(nombre, "ROT_L_%d", b);
-        candidata = rotarBits(imagenActual, total_bytes, b, 0);
-        if (probarYLiberar(candidata, nombre, mascara, resultado, seed, n_pixels, total_bytes, transformacionEncontrada))
-            return true;
+        for (int t = 0; t < 4; ++t) {
+            candidata = (t < 2) ?
+                            rotarBits(imagenActual, total_bytes, b, direcciones[t]) :
+                            desplazarBits(imagenActual, total_bytes, b, direcciones[t]);
 
+            if (candidata && validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
+                char* ptr = transformacionUsada;
+                const char* pref = prefijos[t];
+                while (*pref) *ptr++ = *pref++;
+                const char* num = numeroTexto;
+                while (*num) *ptr++ = *num++;
+                *ptr = '\0';
+
+                delete[] candidata;
+                return true;
+            }
+            if (candidata) {
+                delete[] candidata;
+                candidata = nullptr;
+            }
+        }
     }
+
+    transformacionUsada[0] = '\0';
     return false;
 }
 

@@ -12,120 +12,13 @@ bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* ma
 unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño);
 bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada);
 void convertirEnteroEnTexto(int numero, char* buffer);
+bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada);
+void aplicarTransformacionInversa(unsigned char* entrada, unsigned char* salida, unsigned char* imagenRandom, const char* nombreTransformacion, int totalBytes);
+void aplicarTransformacionInversa(unsigned char* entrada, unsigned char* salida, unsigned char* imagenRandom, const char* nombreTransformacion, int totalBytes);
 
 
 int main()
 {
-
-}
-
-bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* mascara, const unsigned int* resultado, int seed, int n_pixels, int total_bytes) {
-/* Esta función verifica si al validar el enmascaramiento aplicado sobre el arreglo de la imagen candidata coincide con el .txt
- */
-    if (imagen == 0 || mascara == 0 || resultado == 0) return false;
-    if (seed < 0 || n_pixels <= 0) return false;
-
-    unsigned long inicio = (unsigned long)seed * 3UL;
-    unsigned long requerido = (unsigned long)n_pixels * 3UL;
-    unsigned long total_bytes_ul = (unsigned long)total_bytes;
-
-    if (inicio >= total_bytes_ul) return false;
-    if (requerido > total_bytes_ul - inicio) return false;
-
-    const unsigned char* pImagen = imagen + inicio;
-    const unsigned char* pMascara = mascara;
-
-    for (unsigned long i = 0; i < requerido; ++i) {
-        unsigned int suma = (unsigned int)pImagen[i] + (unsigned int)pMascara[i];
-
-        if (suma != resultado[i]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-void convertirEnteroEnTexto(int numero, char* buffer) {
-    if (numero < 0 || numero > 99) {
-        buffer[0] = '\0';
-        return;
-    }
-
-    if (numero < 10) {
-        buffer[0] = '0' + numero;
-        buffer[1] = '\0';
-    } else {
-        buffer[0] = '0' + (numero / 10);
-        buffer[1] = '0' + (numero % 10);
-        buffer[2] = '\0';
-    }
-}
-
-bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada) {
-
-    unsigned char* candidata = nullptr;
-    char numeroTexto[3];
-
-    candidata = aplicarXOR(imagenActual, IM, total_bytes);
-    if (candidata && validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
-        transformacionUsada[0] = 'X';
-        transformacionUsada[1] = 'O';
-        transformacionUsada[2] = 'R';
-        transformacionUsada[3] = '\0';
-        delete[] candidata;
-        return true;
-    }
-    if (candidata) {
-        delete[] candidata;
-        candidata = nullptr;
-    }
-
-    const char* prefijos[] = {"ROT_R_", "ROT_L_", "SHF_R_", "SHF_L_"};
-    const bool direcciones[] = {true, false, true, false};
-
-    for (int b = 1; b <= 7; ++b) {
-        convertirEnteroEnTexto(b, numeroTexto);
-
-        for (int t = 0; t < 4; ++t) {
-            candidata = (t < 2) ?
-                            rotarBits(imagenActual, total_bytes, b, direcciones[t]) :
-                            desplazarBits(imagenActual, total_bytes, b, direcciones[t]);
-
-            if (candidata && validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
-                char* ptr = transformacionUsada;
-                const char* pref = prefijos[t];
-                while (*pref) *ptr++ = *pref++;
-                const char* num = numeroTexto;
-                while (*num) *ptr++ = *num++;
-                *ptr = '\0';
-
-                delete[] candidata;
-                return true;
-            }
-            if (candidata) {
-                delete[] candidata;
-                candidata = nullptr;
-            }
-        }
-    }
-
-    transformacionUsada[0] = '\0';
-    return false;
-}
-
-unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño){
-
-    unsigned char* imagenXOR = new unsigned char[tamaño];
-
-
-    for(int i = 0; i < tamaño; i += 3){
-        imagenXOR[i] = imagen[i] ^ imagenMascara[i];
-        imagenXOR[i + 1] = imagen[i + 1] ^ imagenMascara[i + 1];
-        imagenXOR[i + 2] = imagen[i + 2] ^ imagenMascara[i + 2];
-    }
-
-    return imagenXOR;
 
 }
 
@@ -269,13 +162,220 @@ unsigned int* loadSeedMasking(const char* nombreArchivo, int &seed, int &n_pixel
     return RGB;
 }
 
+unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño){
+
+    unsigned char* imagenXOR = new unsigned char[tamaño];
 
 
+    for(int i = 0; i < tamaño; i += 3){
+        imagenXOR[i] = imagen[i] ^ imagenMascara[i];
+        imagenXOR[i + 1] = imagen[i + 1] ^ imagenMascara[i + 1];
+        imagenXOR[i + 2] = imagen[i + 2] ^ imagenMascara[i + 2];
+    }
 
+    return imagenXOR;
 
+}
 
+bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* mascara, const unsigned int* resultado, int seed, int n_pixels, int total_bytes) {
+    /* Esta función verifica si al validar el enmascaramiento aplicado sobre el arreglo de la imagen candidata coincide con el .txt
+ */
+    if (imagen == 0 || mascara == 0 || resultado == 0) return false;
+    if (seed < 0 || n_pixels <= 0) return false;
 
+    unsigned long inicio = (unsigned long)seed * 3UL;
+    unsigned long requerido = (unsigned long)n_pixels * 3UL;
+    unsigned long total_bytes_ul = (unsigned long)total_bytes;
 
+    if (inicio >= total_bytes_ul) return false;
+    if (requerido > total_bytes_ul - inicio) return false;
+
+    const unsigned char* pImagen = imagen + inicio;
+    const unsigned char* pMascara = mascara;
+
+    for (unsigned long i = 0; i < requerido; ++i) {
+        unsigned int suma = (unsigned int)pImagen[i] + (unsigned int)pMascara[i];
+
+        if (suma != resultado[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void convertirEnteroEnTexto(int numero, char* buffer) {
+    if (numero < 0 || numero > 99) {
+        buffer[0] = '\0';
+        return;
+    }
+
+    if (numero < 10) {
+        buffer[0] = '0' + numero;
+        buffer[1] = '\0';
+    } else {
+        buffer[0] = '0' + (numero / 10);
+        buffer[1] = '0' + (numero % 10);
+        buffer[2] = '\0';
+    }
+}
+
+bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada) {
+
+    unsigned char* candidata = nullptr;
+    char numeroTexto[3];
+
+    candidata = aplicarXOR(imagenActual, IM, total_bytes);
+    if (candidata && validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
+        transformacionUsada[0] = 'X';
+        transformacionUsada[1] = 'O';
+        transformacionUsada[2] = 'R';
+        transformacionUsada[3] = '\0';
+        delete[] candidata;
+        return true;
+    }
+    if (candidata) {
+        delete[] candidata;
+        candidata = nullptr;
+    }
+
+    const char* prefijos[] = {"ROT_R_", "ROT_L_", "SHF_R_", "SHF_L_"};
+    const bool direcciones[] = {true, false, true, false};
+
+    for (int b = 1; b <= 7; ++b) {
+        convertirEnteroEnTexto(b, numeroTexto);
+
+        for (int t = 0; t < 4; ++t) {
+            candidata = (t < 2) ?
+                            rotarBits(imagenActual, total_bytes, b, direcciones[t]) :
+                            desplazarBits(imagenActual, total_bytes, b, direcciones[t]);
+
+            if (candidata && validarEnmascaramiento(candidata, mascara, resultado, seed, n_pixels, total_bytes)) {
+                char* ptr = transformacionUsada;
+                const char* pref = prefijos[t];
+                while (*pref) *ptr++ = *pref++;
+                const char* num = numeroTexto;
+                while (*num) *ptr++ = *num++;
+                *ptr = '\0';
+
+                delete[] candidata;
+                return true;
+            }
+            if (candidata) {
+                delete[] candidata;
+                candidata = nullptr;
+            }
+        }
+    }
+
+    transformacionUsada[0] = '\0';
+    return false;
+}
+
+void aplicarTransformacionInversa(unsigned char* entrada, unsigned char* salida, unsigned char* imagenRandom, const char* nombreTransformacion, int totalBytes) {
+
+    if (!entrada || !salida || !nombreTransformacion) return;
+
+    if (nombreTransformacion[0] == 'X' &&
+        nombreTransformacion[1] == 'O' &&
+        nombreTransformacion[2] == 'R') {
+        for (int i = 0; i < totalBytes; ++i) {
+            salida[i] = entrada[i] ^ imagenRandom[i];
+        }
+    }
+    else if (nombreTransformacion[0] == 'R' &&
+             nombreTransformacion[1] == 'O' &&
+             nombreTransformacion[2] == 'T' &&
+             nombreTransformacion[4] == 'R') {
+        int bits = nombreTransformacion[6] - '0';
+        rotarBits(entrada, salida, totalBytes, bits, false);
+    }
+    else if (nombreTransformacion[0] == 'R' &&
+             nombreTransformacion[1] == 'O' &&
+             nombreTransformacion[2] == 'T' &&
+             nombreTransformacion[4] == 'L') {
+        int bits = nombreTransformacion[6] - '0';
+        rotarBits(entrada, salida, totalBytes, bits, true);
+    }
+    else if (nombreTransformacion[0] == 'S' &&
+             nombreTransformacion[1] == 'H' &&
+             nombreTransformacion[2] == 'F' &&
+             nombreTransformacion[4] == 'R') {
+        int bits = nombreTransformacion[6] - '0';
+        desplazarBits(entrada, salida, totalBytes, bits, false);
+    }
+    else if (nombreTransformacion[0] == 'S' &&
+             nombreTransformacion[1] == 'H' &&
+             nombreTransformacion[2] == 'F' &&
+             nombreTransformacion[4] == 'L') {
+        int bits = nombreTransformacion[6] - '0';
+        desplazarBits(entrada, salida, totalBytes, bits, true);
+    }
+}
+
+bool reconstruirSecuencial(const char* archivoImagenFinal, const char* archivoImagenRandom, const char* archivoMascara, const char** archivosTxT, int numArchivos, const char* archivoSalida) {
+
+    int ancho, alto;
+    unsigned char* imagenFinal = loadPixels(QString(archivoImagenFinal), ancho, alto);
+    unsigned char* imagenRandom = loadPixels(QString(archivoImagenRandom), ancho, alto);
+    unsigned char* mascara = loadPixels(QString(archivoMascara), ancho, alto);
+
+    if (!imagenFinal || !imagenRandom || !mascara) {
+        if (imagenFinal) delete[] imagenFinal;
+        if (imagenRandom) delete[] imagenRandom;
+        if (mascara) delete[] mascara;
+        return false;
+    }
+
+    const int totalBytes = ancho * alto * 3;
+    unsigned char* buffer1 = new unsigned char[totalBytes];
+    unsigned char* buffer2 = new unsigned char[totalBytes];
+
+    for (int i = 0; i < totalBytes; i++) buffer1[i] = imagenFinal[i];
+
+    for (int i = numArchivos - 1; i >= 0; i--) {
+        int seed, n_pixels;
+        unsigned int* resultado = loadSeedMasking(archivosTxT[i], seed, n_pixels);
+        if (!resultado) {
+            delete[] buffer1;
+            delete[] buffer2;
+            delete[] imagenFinal;
+            delete[] imagenRandom;
+            delete[] mascara;
+            return false;
+        }
+
+        char transformacionUsada[32];
+        if (!detectarTransformacion(buffer1, imagenRandom, mascara, resultado,
+                                    seed, n_pixels, totalBytes, transformacionUsada)) {
+            delete[] buffer1;
+            delete[] buffer2;
+            delete[] imagenFinal;
+            delete[] imagenRandom;
+            delete[] mascara;
+            delete[] resultado;
+            return false;
+        }
+
+        aplicarTransformacionInversa(buffer1, buffer2, imagenRandom, transformacionUsada, totalBytes);
+
+        unsigned char* tempSwap = buffer1;
+        buffer1 = buffer2;
+        buffer2 = tempSwap;
+
+        delete[] resultado;
+    }
+
+    bool exito = exportImage(buffer1, ancho, alto, QString(archivoSalida));
+
+    delete[] imagenFinal;
+    delete[] imagenRandom;
+    delete[] mascara;
+    delete[] buffer1;
+    delete[] buffer2;
+
+    return exito;
+}
 
 
 

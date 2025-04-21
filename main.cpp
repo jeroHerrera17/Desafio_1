@@ -478,65 +478,64 @@ void aplicarTransformacionInversa(unsigned char* entrada, unsigned char* salida,
 }
 
 bool reconstruirSecuencial(const char* archivoImagenFinal, const char* archivoImagenRandom, const char* archivoMascara, const char** archivosTxT, int numArchivos, const char* archivoSalida) {
-
-    int ancho, alto;
-    unsigned char* imagenFinal = loadPixels(QString(archivoImagenFinal), ancho, alto);
-    unsigned char* imagenRandom = loadPixels(QString(archivoImagenRandom), ancho, alto);
-    unsigned char* mascara = loadPixels(QString(archivoMascara), ancho, alto);
+    int ancho = 0, alto = 0;
+    unsigned char *imagenFinal = loadPixels(QString(archivoImagenFinal), ancho, alto);
+    unsigned char *imagenRandom = loadPixels(QString(archivoImagenRandom), ancho, alto);
+    unsigned char *mascara = loadPixels(QString(archivoMascara), ancho, alto);
 
     if (!imagenFinal || !imagenRandom || !mascara) {
-        if (imagenFinal) delete[] imagenFinal;
-        if (imagenRandom) delete[] imagenRandom;
-        if (mascara) delete[] mascara;
+        if (imagenFinal) { delete[] imagenFinal; imagenFinal = nullptr; }
+        if (imagenRandom) { delete[] imagenRandom; imagenRandom = nullptr; }
+        if (mascara) { delete[] mascara; mascara = nullptr; }
         return false;
     }
 
     const int totalBytes = ancho * alto * 3;
-    unsigned char* buffer1 = new unsigned char[totalBytes];
-    unsigned char* buffer2 = new unsigned char[totalBytes];
+    unsigned char* bufferActual = new unsigned char[totalBytes];
+    unsigned char* bufferAnterior = new unsigned char[totalBytes];
 
-    for (int i = 0; i < totalBytes; i++) buffer1[i] = imagenFinal[i];
-
-    for (int i = numArchivos - 1; i >= 0; i--) {
-        int seed, n_pixels;
-        unsigned int* resultado = loadSeedMasking(archivosTxT[i], seed, n_pixels);
-        if (!resultado) {
-            delete[] buffer1;
-            delete[] buffer2;
-            delete[] imagenFinal;
-            delete[] imagenRandom;
-            delete[] mascara;
-            return false;
-        }
-
-        char transformacionUsada[32];
-        if (!detectarTransformacion(buffer1, imagenRandom, mascara, resultado,
-                                    seed, n_pixels, totalBytes, transformacionUsada)) {
-            delete[] buffer1;
-            delete[] buffer2;
-            delete[] imagenFinal;
-            delete[] imagenRandom;
-            delete[] mascara;
-            delete[] resultado;
-            return false;
-        }
-
-        aplicarTransformacionInversa(buffer1, buffer2, imagenRandom, transformacionUsada, totalBytes);
-
-        unsigned char* tempSwap = buffer1;
-        buffer1 = buffer2;
-        buffer2 = tempSwap;
-
-        delete[] resultado;
+    for (int i = 0; i < totalBytes; ++i) {
+        bufferActual[i] = imagenFinal[i];
     }
 
-    bool exito = exportImage(buffer1, ancho, alto, QString(archivoSalida));
+    bool reconstruccionExitosa = true;
 
-    delete[] imagenFinal;
-    delete[] imagenRandom;
-    delete[] mascara;
-    delete[] buffer1;
-    delete[] buffer2;
+    for (int i = numArchivos - 1; i >= 0; --i) {
+        int seed = 0, n_pixels = 0;
+        unsigned int* resultado = loadSeedMasking(archivosTxT[i], seed, n_pixels);
+
+        if (!resultado) {
+            reconstruccionExitosa = false;
+            break;
+        }
+
+        char transformacionUsada[32] = {0};
+        if (!detectarTransformacion(bufferActual, imagenRandom, mascara, resultado, seed, n_pixels, totalBytes, transformacionUsada)) {
+            delete[] resultado; resultado = nullptr;
+            reconstruccionExitosa = false;
+            break;
+        }
+
+        aplicarTransformacionInversa(bufferActual, bufferAnterior, imagenRandom, transformacionUsada, totalBytes);
+
+        unsigned char* temp = bufferActual;
+        bufferActual = bufferAnterior;
+        bufferAnterior = temp;
+
+        delete[] resultado;
+        resultado = nullptr;
+    }
+
+    bool exito = false;
+    if (reconstruccionExitosa) {
+        exito = exportImage(bufferActual, ancho, alto, QString(archivoSalida));
+    }
+
+    if (imagenFinal) { delete[] imagenFinal; imagenFinal = nullptr; }
+    if (imagenRandom) { delete[] imagenRandom; imagenRandom = nullptr; }
+    if (mascara) { delete[] mascara; mascara = nullptr; }
+    if (bufferActual) { delete[] bufferActual; bufferActual = nullptr; }
+    if (bufferAnterior) { delete[] bufferAnterior; bufferAnterior = nullptr; }
 
     return exito;
 }

@@ -281,6 +281,9 @@ unsigned char* desplazarBits(unsigned char* imagen, int tamaño, int NumDesplaza
             imagenDesplazada[i + 1] = imagen[i + 1] << NumDesplazamientos;
             imagenDesplazada[i + 2] = imagen[i + 2] << NumDesplazamientos;
         }
+        else{
+            return imagenDesplazada;
+        }
     }
 
     return imagenDesplazada;

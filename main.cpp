@@ -23,28 +23,52 @@ bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsi
 void convertirEnteroEnTexto(int numero, char* buffer);
 bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada);
 void aplicarTransformacionInversa(unsigned char* entrada, unsigned char* salida, unsigned char* imagenRandom, const char* nombreTransformacion, int totalBytes);
-bool reconstruirSecuencial(const char* archivoImagenFinal, const char* archivoImagenRandom, const char* archivoMascara, const char** archivosTxT, int numArchivos, const char* archivoSalida);
+bool reconstruirSecuencial(unsigned char* arrayImagenFinal, unsigned char* arrayImagenRandom, unsigned char* arrayMascara, int numArchivos, int ancho, int alto, const char* archivoSalida);
 
 
 int main() {
-    const char* imagenFinal = "D:/Pruebas/Caso 1/I_D.bmp";
-    const char* imagenRandom = "D:/Pruebas/Caso 1/I_M.bmp";
-    const char* mascara = "D:/Pruebas/Caso 1/M.bmp";
+    //Definicion de variables
+    string nombreArchivo = "";
+    int numArchivos = 0;
 
-    const char* archivosTxt[] = {
-        "D:/Pruebas/Caso 1/M0.txt",
-        "D:/Pruebas/Caso 1/M1.txt",
-        "D:/Pruebas/Caso 1/M2.txt",
-    };
-    int numArchivos = sizeof(archivosTxt) / sizeof(archivosTxt[0]);
+    //Cargar informacion de la mascara
+    QString rutaMascara = "D:/Pruebas/Caso 2/M.bmp";
+    int widthMascara = 0;
+    int heightMascara = 0;
+    unsigned char *arrayMascara = loadPixels(rutaMascara, widthMascara, heightMascara);
 
-    const char* salida = "D:/Pruebas/Caso 1/resultado.bmp";
+    //Cargar informacion de I_D
+    QString rutaI_D = "D:/Pruebas/Caso 2/I_D.bmp";
+    int widthI_D = 0;
+    int heightI_D = 0;
+    unsigned char *arrayImagenFinal = loadPixels(rutaI_D, widthI_D, heightI_D);
 
-    if (reconstruirSecuencial(imagenFinal, imagenRandom, mascara, archivosTxt, numArchivos, salida)) {
+    //Cargar informacion de I_M
+    QString rutaI_M = "D:/Pruebas/Caso 2/I_M.bmp";
+    int widthI_M = 0;
+    int heightI_M = 0;
+    unsigned char *arrayImagenRandom = loadPixels(rutaI_M, widthI_M, heightI_M);
+
+    cout << "Ingrese el numero de archivos de texto a comparar: " << endl;
+    cin >> numArchivos;
+
+    const char* archivoSalida = "D:/Pruebas/Caso 1/resultado.bmp";
+
+
+    if (reconstruirSecuencial(arrayImagenFinal, arrayImagenRandom, arrayMascara, numArchivos, widthI_D, heightI_D, archivoSalida)) {
         cout << "Reconstrucción completada con éxito." << endl;
     } else {
         cerr << "Error durante la reconstrucción." << endl;
     }
+
+    delete[] arrayImagenRandom;
+    arrayImagenRandom = nullptr;
+
+    delete[] arrayMascara;
+    arrayMascara = nullptr;
+
+    delete[] arrayImagenFinal;
+    arrayImagenFinal = nullptr;
 
     return 0;
 }
@@ -530,68 +554,65 @@ void aplicarTransformacionInversa(unsigned char* entrada, unsigned char* salida,
     }
 }
 
-bool reconstruirSecuencial(const char* archivoImagenFinal, const char* archivoImagenRandom, const char* archivoMascara, const char** archivosTxT, int numArchivos, const char* archivoSalida) {
+bool reconstruirSecuencial(unsigned char* arrayImagenFinal, unsigned char* arrayImagenRandom, unsigned char* arrayMascara, int numArchivos, int ancho, int alto, const char* archivoSalida) {
 
-    int width, height;
-    unsigned char* I_D = loadPixels(QString(archivoImagenFinal), width, height);
-    unsigned char* I_M = loadPixels(QString(archivoImagenRandom), width, height);
-    unsigned char* M = loadPixels(QString(archivoMascara), width, height);
-
-    if (!I_D || !I_M || !M) {
-        if (I_D) delete[] I_D;
-        if (I_M) delete[] I_M;
-        if (M) delete[] M;
+    if (!arrayImagenFinal || !arrayImagenRandom || !arrayMascara) {
+        cout << "Error: Uno de los arreglos de entrada es nulo." << endl;
         return false;
     }
 
-    const int totalBytes = width * height * 3;
+    const int totalBytes = ancho * alto * 3;
     unsigned char* bufferActual = new unsigned char[totalBytes];
     unsigned char* bufferAnterior = new unsigned char[totalBytes];
-    memcpy(bufferActual, I_D, totalBytes);
 
-    bool exito = true;
-    for (int i = 0; i < numArchivos; ++i) {  // Cambiado a orden directo
-        int seed, n_pixels;
-        unsigned int* enmascarado = loadSeedMasking(archivosTxT[i], seed, n_pixels);
-        if (!enmascarado) {
-            exito = false;
+    for (int i = 0; i < totalBytes; ++i) {
+        bufferActual[i] = arrayImagenFinal[i];
+    }
+
+    bool reconstruccionExitosa = true;
+
+    for (int i = numArchivos - 1; i >= 0; --i) {
+        char nombreArchivo[256];
+        sprintf(nombreArchivo, "D:/Pruebas/Caso 2/M%d.txt", i); // Ruta ajustable
+
+        int seed = 0, n_pixels = 0;
+        unsigned int* resultado = loadSeedMasking(nombreArchivo, seed, n_pixels);
+
+        if (!resultado) {
+            reconstruccionExitosa = false;
             break;
         }
 
-        for (int k = 0; k < n_pixels * 3; ++k) {
-            int pos = (seed * 3 + k) % totalBytes;
-            bufferActual[pos] = enmascarado[k] - M[k % (width * height * 3)];
-        }
-
-        char transformacion[32];
-        if (!detectarTransformacion(bufferActual, I_M, M, enmascarado,
-                                    seed, n_pixels, totalBytes, transformacion)) {
-            delete[] enmascarado;
-            exito = false;
+        char transformacionUsada[32] = {0};
+        if (!detectarTransformacion(bufferActual, arrayImagenRandom, arrayMascara, resultado,
+                                    seed, n_pixels, totalBytes, transformacionUsada)) {
+            delete[] resultado;
+            resultado = nullptr;
+            reconstruccionExitosa = false;
             break;
         }
 
-        cout << "Paso " << (i + 1) << ": Se detectó la transformación '" << transformacion << "'." << endl;
+        aplicarTransformacionInversa(bufferActual, bufferAnterior, arrayImagenRandom, transformacionUsada, totalBytes);
 
-        aplicarTransformacionInversa(bufferActual, bufferAnterior, I_M,
-                                     transformacion, totalBytes);
-        swap(bufferActual, bufferAnterior);
+        unsigned char* temp = bufferActual;
+        bufferActual = bufferAnterior;
+        bufferAnterior = temp;
 
-        delete[] enmascarado;
+        delete[] resultado;
+        resultado = nullptr;
     }
 
-    if (exito) {
-        exportImage(bufferActual, width, height, QString(archivoSalida));
+    bool exito = false;
+    if (reconstruccionExitosa) {
+        exito = exportImage(bufferActual, ancho, alto, QString(archivoSalida));
     }
 
-    delete[] I_D;
-    delete[] I_M;
-    delete[] M;
     delete[] bufferActual;
     delete[] bufferAnterior;
 
     return exito;
 }
+
 
 
 

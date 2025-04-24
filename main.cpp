@@ -264,10 +264,10 @@ unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, i
 unsigned char rotacion(unsigned char elemento, unsigned int NumRotaciones, char direccion){
 
     unsigned char elementoRotado;
-    if(direccion == 'i'){
+    if(direccion == 'I'){
         elementoRotado = ((elemento << NumRotaciones) | (elemento >> (8 - NumRotaciones)));
     }
-    else if(direccion == 'd'){
+    else if(direccion == 'D'){
         elementoRotado = ((elemento >> NumRotaciones) | (elemento << (8 - NumRotaciones)));
     }
     else{
@@ -326,10 +326,13 @@ unsigned char* desplazarBits(unsigned char* imagen, int tamaño, int NumDesplaza
             imagenDesplazada[i + 2] = imagen[i + 2] >> NumDesplazamientos;
         }
 
-        else{
+        else if (direccion == 'I'){
             imagenDesplazada[i] = imagen[i] << NumDesplazamientos;
             imagenDesplazada[i + 1] = imagen[i + 1] << NumDesplazamientos;
             imagenDesplazada[i + 2] = imagen[i + 2] << NumDesplazamientos;
+        }
+        else{
+            return imagenDesplazada;
         }
     }
 

@@ -260,7 +260,6 @@ unsigned int* loadSeedMasking(const char* nombreArchivo, int &seed, int &n_pixel
 unsigned char* aplicarXOR(unsigned char* imagen, unsigned char* imagenMascara, int tamaño){
 
     //se crea un arreglo dinamico en el que guardaremos los resultados de la aplicacion del operador XOR
-    //*ADVERTENCIA*, no olvidar eliminar espacio de memoria de imagenXOR cuando se dee de utilizar
     unsigned char* imagenXOR = new unsigned char[tamaño];
 
     //inicializamos un ciclo con el cual pasaremos por cada uno de los elementos de imagen e imagenMascara
@@ -314,7 +313,6 @@ unsigned char rotacion(unsigned char elemento, unsigned int NumRotaciones, char 
 unsigned char* rotarBits(unsigned char* imagen, int tamaño, int NumRotaciones, char direccion){
 
     //definimos una variable donde guardaremos la imagen rotada;
-    //*ADVERTENCIA*, no olvide eliminar el espacio de memoria de imagenRotada cuando se deje de utilizar;
     unsigned char* imagenRotada = new unsigned char[tamaño];
 
     //creamos un ciclo el cual nos ayudara a pasar y rotar cada uno de los elementos de la imagen;
@@ -340,7 +338,6 @@ unsigned char* rotarBits(unsigned char* imagen, int tamaño, int NumRotaciones, 
 unsigned char* desplazarBits(unsigned char* imagen, int tamaño, int NumDesplazamientos, char direccion){
 
     //definimos una variable donde guardaremos la imagen desplazada.
-    //*ADVERTENCIA*, no olvide eliminar el espacio de memoria de imagenDesplazada cuando se deje de utilizar.
     unsigned char* imagenDesplazada = new unsigned char[tamaño];
 
     for(int i = 0; i < tamaño; i += 3){
@@ -608,7 +605,9 @@ bool reconstruirSecuencial(unsigned char* arrayImagenFinal, unsigned char* array
     }
 
     delete[] bufferActual;
+    bufferActual = nullptr;
     delete[] bufferAnterior;
+    bufferAnterior = nullptr;
 
     return exito;
 }

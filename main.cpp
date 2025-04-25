@@ -19,9 +19,11 @@ unsigned char* rotarBits(unsigned char* imagen, int tamaño, int NumRotaciones, 
 unsigned char* desplazarBits(unsigned char* imagen, int tamaño, int NumDesplazamientos, char direccion);
 
 //modulo 3:
-bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada);
+bool validarEnmascaramiento(const unsigned char* imagen, const unsigned char* mascara, const unsigned int* resultado, int seed, int n_pixels, int total_bytes);
 void convertirEnteroEnTexto(int numero, char* buffer);
 bool detectarTransformacion(unsigned char* imagenActual, unsigned char* IM, unsigned char* mascara, unsigned int* resultado, int seed, int n_pixels, int total_bytes, char* transformacionUsada);
+
+//modulo 4:
 void aplicarTransformacionInversa(unsigned char* entrada, unsigned char* salida, unsigned char* imagenRandom, const char* nombreTransformacion, int totalBytes);
 bool reconstruirSecuencial(unsigned char* arrayImagenFinal, unsigned char* arrayImagenRandom, unsigned char* arrayMascara, int numArchivos, int ancho, int alto, const char* archivoSalida);
 
@@ -56,9 +58,9 @@ int main() {
 
 
     if (reconstruirSecuencial(arrayImagenFinal, arrayImagenRandom, arrayMascara, numArchivos, widthI_D, heightI_D, archivoSalida)) {
-        cout << "Reconstrucción completada con éxito." << endl;
+        cout << "Reconstrucción completada con exito." << endl;
     } else {
-        cerr << "Error durante la reconstrucción." << endl;
+        cerr << "Error durante la reconstruccion." << endl;
     }
 
     delete[] arrayImagenRandom;
@@ -552,9 +554,8 @@ void aplicarTransformacionInversa(unsigned char* entrada, unsigned char* salida,
 }
 
 bool reconstruirSecuencial(unsigned char* arrayImagenFinal, unsigned char* arrayImagenRandom, unsigned char* arrayMascara, int numArchivos, int ancho, int alto, const char* archivoSalida) {
-
     if (!arrayImagenFinal || !arrayImagenRandom || !arrayMascara) {
-        cout << "Error: Uno de los arreglos de entrada es nulo." << endl;
+        cout << "[ERROR] Uno de los arreglos de entrada es nulo." << endl;
         return false;
     }
 
@@ -570,24 +571,31 @@ bool reconstruirSecuencial(unsigned char* arrayImagenFinal, unsigned char* array
 
     for (int i = numArchivos - 1; i >= 0; --i) {
         char nombreArchivo[256];
-        sprintf(nombreArchivo, "D:/Pruebas/Caso 2/M%d.txt", i); // Ruta ajustable
+        sprintf(nombreArchivo, "D:/Pruebas/Caso 2/M%d.txt", i);
+
+        cout << "\n[INFO] Procesando archivo: M" << i << ".txt" << endl;
 
         int seed = 0, n_pixels = 0;
         unsigned int* resultado = loadSeedMasking(nombreArchivo, seed, n_pixels);
 
         if (!resultado) {
+            cerr << "[ERROR] No se pudo cargar el archivo: " << nombreArchivo << endl;
             reconstruccionExitosa = false;
             break;
         }
 
         char transformacionUsada[32] = {0};
-        if (!detectarTransformacion(bufferActual, arrayImagenRandom, arrayMascara, resultado,
-                                    seed, n_pixels, totalBytes, transformacionUsada)) {
+        bool detectada = detectarTransformacion(bufferActual, arrayImagenRandom, arrayMascara, resultado, seed, n_pixels, totalBytes, transformacionUsada);
+
+        if (!detectada) {
+            cerr << "[ERROR] No se detecto ninguna transformacion valida para M" << i << ".txt" << endl;
             delete[] resultado;
             resultado = nullptr;
             reconstruccionExitosa = false;
             break;
         }
+
+        cout << "Transformacion detectada para M" << i << ".txt: " << transformacionUsada << endl;
 
         aplicarTransformacionInversa(bufferActual, bufferAnterior, arrayImagenRandom, transformacionUsada, totalBytes);
 
@@ -611,6 +619,7 @@ bool reconstruirSecuencial(unsigned char* arrayImagenFinal, unsigned char* array
 
     return exito;
 }
+
 
 
 
